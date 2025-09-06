@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>National Day Check-In</title>
+  <title>Check in - Sep 17</title>
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
   <style>
     body {
@@ -45,7 +45,7 @@
   </style>
 </head>
 <body>
-  <h1>National Day Check-In</h1>
+  <h1>Check in - Sep 17</h1>
   <div id="reader"></div>
   <div id="result" class="info-box" style="display:none;">
     <h2>Guest Information</h2>
@@ -69,15 +69,30 @@
     }
 
     function onScanError(errorMessage) {
-      // optional: console.log(`Scan error: ${errorMessage}`);
+      // Do nothing for scan errors (common if no QR is visible)
     }
 
-    let html5QrcodeScanner = new Html5QrcodeScanner(
-      "reader", 
-      { fps: 10, qrbox: 250 },
-      false
-    );
-    html5QrcodeScanner.render(onScanSuccess, onScanError);
+    // Force use of back camera
+    const html5QrCode = new Html5Qrcode("reader");
+    Html5Qrcode.getCameras().then(cameras => {
+      if (cameras && cameras.length) {
+        // Try to find a back camera
+        const backCamera = cameras.find(cam => /back|rear/i.test(cam.label)) || cameras[0];
+        html5QrCode.start(
+          backCamera.id,
+          {
+            fps: 10,
+            qrbox: 250
+          },
+          onScanSuccess,
+          onScanError
+        );
+      } else {
+        alert("No cameras found on this device.");
+      }
+    }).catch(err => {
+      alert("Error accessing camera: " + err);
+    });
   </script>
 </body>
 </html>
