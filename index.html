@@ -168,6 +168,10 @@
     }
 
     function showManualSearch() {
+      if (html5QrCode) {
+        html5QrCode.stop().catch(err => console.log("Scanner already stopped"));
+      }
+      document.getElementById("reader").style.display = "none";
       document.getElementById("manual-search").style.display = "block";
       document.getElementById("matches-box").style.display = "none";
       document.getElementById("result").style.display = "none";
@@ -231,6 +235,8 @@
       document.getElementById("manual-box").style.display = "none";
       document.getElementById("manual-search").style.display = "none";
       document.getElementById("matches-box").style.display = "none";
+      document.getElementById("reader").style.display = "block";
+
       html5QrCode.start(
         currentCameraId,
         { fps: 10, qrbox: 250 },
