@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>National Day Check-In</title>
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f5f5f5;
+      text-align: center;
+      padding: 20px;
+    }
+    h1 {
+      color: #7B1113;
+    }
+    #reader {
+      width: 300px;
+      margin: auto;
+    }
+    .info-box {
+      margin-top: 20px;
+      padding: 15px;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      text-align: left;
+      max-width: 400px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .info-box h2 {
+      font-size: 1.2em;
+      color: #333;
+      margin-bottom: 10px;
+    }
+    .info-item {
+      margin: 5px 0;
+    }
+    .label {
+      font-weight: bold;
+      color: #7B1113;
+    }
+  </style>
+</head>
+<body>
+  <h1>National Day Check-In</h1>
+  <div id="reader"></div>
+  <div id="result" class="info-box" style="display:none;">
+    <h2>Guest Information</h2>
+    <div class="info-item"><span class="label">Name:</span> <span id="guest-name"></span></div>
+    <div class="info-item"><span class="label">Agency:</span> <span id="guest-agency"></span></div>
+    <div class="info-item"><span class="label">Host:</span> <span id="guest-host"></span></div>
+  </div>
+
+  <script>
+    function onScanSuccess(decodedText, decodedResult) {
+      console.log(`QR Code detected: ${decodedText}`);
+      const parts = decodedText.split("|");
+      if (parts.length >= 4) {
+        document.getElementById("guest-name").textContent = parts[0].trim();
+        document.getElementById("guest-agency").textContent = parts[1].trim();
+        document.getElementById("guest-host").textContent = parts[3].trim();
+        document.getElementById("result").style.display = "block";
+      } else {
+        alert("Invalid QR code format");
+      }
+    }
+
+    function onScanError(errorMessage) {
+      // optional: console.log(`Scan error: ${errorMessage}`);
+    }
+
+    let html5QrcodeScanner = new Html5QrcodeScanner(
+      "reader", 
+      { fps: 10, qrbox: 250 },
+      false
+    );
+    html5QrcodeScanner.render(onScanSuccess, onScanError);
+  </script>
+</body>
+</html>
