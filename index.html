@@ -12,61 +12,34 @@
       text-align: center;
       padding: 20px;
     }
-    h1 {
-      color: #7B1113;
-    }
-    #reader {
-      width: 300px;
-      margin: auto;
-    }
+    h1 { color: #7B1113; }
+    #reader { width: 300px; margin: auto; }
     .info-box {
-      margin-top: 20px;
-      padding: 15px;
-      background: #fff;
-      border-radius: 10px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-      text-align: left;
-      max-width: 400px;
-      margin-left: auto;
-      margin-right: auto;
+      margin-top: 20px; padding: 15px; background: #fff;
+      border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      text-align: left; max-width: 400px; margin-left: auto; margin-right: auto;
     }
-    .info-box h2 {
-      font-size: 1.2em;
-      color: #333;
-      margin-bottom: 10px;
-    }
-    .info-item {
-      margin: 5px 0;
-    }
-    .label {
-      font-weight: bold;
-      color: #7B1113;
-    }
-    .button-row {
-      text-align: center;
-      margin-top: 20px;
-    }
+    .info-box h2 { font-size: 1.2em; color: #333; margin-bottom: 10px; }
+    .info-item { margin: 5px 0; }
+    .label { font-weight: bold; color: #7B1113; }
+    .button-row { text-align: center; margin-top: 20px; }
     button {
-      font-size: 16px;
-      padding: 10px 20px;
-      margin: 5px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
+      font-size: 16px; padding: 10px 20px; margin: 5px;
+      border: none; border-radius: 8px; cursor: pointer;
     }
-    .checkin-btn {
-      background-color: #4CAF50;
-      color: white;
-    }
-    .partial-btn {
-      background-color: #FFA500;
-      color: white;
-    }
+    .checkin-btn { background-color: #4CAF50; color: white; }
+    .partial-btn { background-color: #FFA500; color: white; }
+    .back-btn { background-color: #7B1113; color: white; }
+    .error-box { margin-top: 20px; color: red; font-weight: bold; }
+    #manual-box { margin-top: 20px; }
+    input[type="text"] { padding: 8px; font-size: 16px; width: 150px; }
   </style>
 </head>
 <body>
   <h1>Check in - Sep 17</h1>
   <div id="reader"></div>
+  
+  <!-- Guest Info -->
   <div id="result" class="info-box" style="display:none;">
     <h2>Guest Information</h2>
     <div class="info-item"><span class="label">Name:</span> <span id="guest-name"></span></div>
@@ -78,7 +51,16 @@
     <div class="button-row">
       <button class="checkin-btn" onclick="updateStatus('checkin')">Check In</button>
       <button class="partial-btn" onclick="updateStatus('partial')">Partial</button>
+      <button class="back-btn" onclick="restartScanner()">Back</button>
     </div>
+  </div>
+
+  <!-- Error + Manual ID Input -->
+  <div id="error-box" class="error-box" style="display:none;"></div>
+  <div id="manual-box" style="display:none;">
+    <p>Enter Guest ID (3-letter):</p>
+    <input type="text" id="manual-id" maxlength="3" />
+    <button onclick="manualLookup()">Lookup</button>
   </div>
 
   <script>
@@ -86,15 +68,25 @@
     let lastScannedName = "";
     let scannedAgency = "";
     let scannedHost = "";
+    let html5QrCode;
 
     function displayInfo(data) {
-      document.getElementById("guest-name").textContent = lastScannedName;
-      document.getElementById("guest-agency").textContent = scannedAgency;
-      document.getElementById("guest-host").textContent = scannedHost;
+      document.getElementById("guest-name").textContent = data.name || lastScannedName;
+      document.getElementById("guest-agency").textContent = data.agency || scannedAgency;
+      document.getElementById("guest-host").textContent = data.host || scannedHost;
       document.getElementById("guest-vip").textContent = data.vip || "";
       document.getElementById("guest-attendance").textContent = data.attendance || "";
       document.getElementById("guest-status").textContent = data.status || "";
       document.getElementById("result").style.display = "block";
+      document.getElementById("error-box").style.display = "none";
+      document.getElementById("manual-box").style.display = "none";
+    }
+
+    function showError(message) {
+      document.getElementById("error-box").textContent = message;
+      document.getElementById("error-box").style.display = "block";
+      document.getElementById("manual-box").style.display = "block";
+      document.getElementById("result").style.display = "none";
     }
 
     function updateStatus(action) {
@@ -102,14 +94,47 @@
         .then(res => res.json())
         .then(data => {
           if (data.error) {
-            alert(data.error);
+            showError(data.error);
           } else {
             displayInfo(data);
           }
         })
         .catch(err => {
-          alert("Error updating status: " + err);
+          showError("Error updating status: " + err);
         });
+    }
+
+    function manualLookup() {
+      const id = document.getElementById("manual-id").value.trim();
+      if (!id) {
+        alert("Please enter a valid Guest ID.");
+        return;
+      }
+      fetch(`${scriptUrl}?id=${encodeURIComponent(id)}&action=lookup`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.error) {
+            showError(data.error);
+          } else {
+            displayInfo(data);
+            lastScannedName = data.name; // update in case we use action buttons later
+          }
+        })
+        .catch(err => {
+          showError("Error fetching data: " + err);
+        });
+    }
+
+    function restartScanner() {
+      document.getElementById("result").style.display = "none";
+      document.getElementById("error-box").style.display = "none";
+      document.getElementById("manual-box").style.display = "none";
+      html5QrCode.start(
+        currentCameraId,
+        { fps: 10, qrbox: 250 },
+        onScanSuccess,
+        onScanError
+      );
     }
 
     function onScanSuccess(decodedText, decodedResult) {
@@ -119,40 +144,37 @@
         scannedAgency = parts[1].trim();
         scannedHost = parts[3].trim();
 
-        // Stop scanner after successful scan
         html5QrCode.stop().then(() => {
-          console.log("QR scanner stopped.");
+          fetch(`${scriptUrl}?name=${encodeURIComponent(lastScannedName)}&action=lookup`)
+            .then(res => res.json())
+            .then(data => {
+              if (data.error) {
+                showError("Guest not found. Please enter Guest ID.");
+              } else {
+                displayInfo(data);
+              }
+            })
+            .catch(err => {
+              showError("Error fetching data: " + err);
+            });
         });
-
-        // Lookup guest info
-        fetch(`${scriptUrl}?name=${encodeURIComponent(lastScannedName)}&action=lookup`)
-          .then(res => res.json())
-          .then(data => {
-            if (data.error) {
-              alert(data.error);
-            } else {
-              displayInfo(data);
-            }
-          })
-          .catch(err => {
-            alert("Error fetching data: " + err);
-          });
       } else {
-        alert("Invalid QR code format");
+        showError("Invalid QR code. Please enter Guest ID.");
       }
     }
 
     function onScanError(errorMessage) {
-      // Ignore errors if no QR is in view
+      // ignore small errors
     }
 
-    // Initialize scanner
-    const html5QrCode = new Html5Qrcode("reader");
+    let currentCameraId;
+    html5QrCode = new Html5Qrcode("reader");
     Html5Qrcode.getCameras().then(cameras => {
       if (cameras && cameras.length) {
         const backCamera = cameras.find(cam => /back|rear/i.test(cam.label)) || cameras[0];
+        currentCameraId = backCamera.id;
         html5QrCode.start(
-          backCamera.id,
+          currentCameraId,
           { fps: 10, qrbox: 250 },
           onScanSuccess,
           onScanError
