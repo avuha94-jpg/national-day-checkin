@@ -42,6 +42,26 @@
       font-weight: bold;
       color: #7B1113;
     }
+    .button-row {
+      text-align: center;
+      margin-top: 20px;
+    }
+    button {
+      font-size: 16px;
+      padding: 10px 20px;
+      margin: 5px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .checkin-btn {
+      background-color: #4CAF50;
+      color: white;
+    }
+    .partial-btn {
+      background-color: #FFA500;
+      color: white;
+    }
   </style>
 </head>
 <body>
@@ -52,38 +72,88 @@
     <div class="info-item"><span class="label">Name:</span> <span id="guest-name"></span></div>
     <div class="info-item"><span class="label">Agency:</span> <span id="guest-agency"></span></div>
     <div class="info-item"><span class="label">Host:</span> <span id="guest-host"></span></div>
+    <div class="info-item"><span class="label">VIP:</span> <span id="guest-vip"></span></div>
+    <div class="info-item"><span class="label">Attendance:</span> <span id="guest-attendance"></span></div>
+    <div class="info-item"><span class="label">Status:</span> <span id="guest-status"></span></div>
+    <div class="button-row">
+      <button class="checkin-btn" onclick="updateStatus('checkin')">Check In</button>
+      <button class="partial-btn" onclick="updateStatus('partial')">Partial</button>
+    </div>
   </div>
 
   <script>
+    const scriptUrl = "https://script.google.com/macros/s/AKfycbzXqaxP3qEJe121vFih7Uu6-VuY7v9mXEPLYXIvh3P3yaTHrKG2Q-nkAID4ZIBpsl-4uw/exec"; // replace with your Apps Script web app URL
+    let lastScannedName = "";
+    let scannedAgency = "";
+    let scannedHost = "";
+
+    function displayInfo(data) {
+      document.getElementById("guest-name").textContent = lastScannedName;
+      document.getElementById("guest-agency").textContent = scannedAgency;
+      document.getElementById("guest-host").textContent = scannedHost;
+      document.getElementById("guest-vip").textContent = data.vip || "";
+      document.getElementById("guest-attendance").textContent = data.attendance || "";
+      document.getElementById("guest-status").textContent = data.status || "";
+      document.getElementById("result").style.display = "block";
+    }
+
+    function updateStatus(action) {
+      fetch(`${scriptUrl}?name=${encodeURIComponent(lastScannedName)}&action=${action}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.error) {
+            alert(data.error);
+          } else {
+            displayInfo(data);
+          }
+        })
+        .catch(err => {
+          alert("Error updating status: " + err);
+        });
+    }
+
     function onScanSuccess(decodedText, decodedResult) {
-      console.log(`QR Code detected: ${decodedText}`);
       const parts = decodedText.split("|");
       if (parts.length >= 4) {
-        document.getElementById("guest-name").textContent = parts[0].trim();
-        document.getElementById("guest-agency").textContent = parts[1].trim();
-        document.getElementById("guest-host").textContent = parts[3].trim();
-        document.getElementById("result").style.display = "block";
+        lastScannedName = parts[0].trim();
+        scannedAgency = parts[1].trim();
+        scannedHost = parts[3].trim();
+
+        // Stop scanner after successful scan
+        html5QrCode.stop().then(() => {
+          console.log("QR scanner stopped.");
+        });
+
+        // Lookup guest info
+        fetch(`${scriptUrl}?name=${encodeURIComponent(lastScannedName)}&action=lookup`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.error) {
+              alert(data.error);
+            } else {
+              displayInfo(data);
+            }
+          })
+          .catch(err => {
+            alert("Error fetching data: " + err);
+          });
       } else {
         alert("Invalid QR code format");
       }
     }
 
     function onScanError(errorMessage) {
-      // Do nothing for scan errors (common if no QR is visible)
+      // Ignore errors if no QR is in view
     }
 
-    // Force use of back camera
+    // Initialize scanner
     const html5QrCode = new Html5Qrcode("reader");
     Html5Qrcode.getCameras().then(cameras => {
       if (cameras && cameras.length) {
-        // Try to find a back camera
         const backCamera = cameras.find(cam => /back|rear/i.test(cam.label)) || cameras[0];
         html5QrCode.start(
           backCamera.id,
-          {
-            fps: 10,
-            qrbox: 250
-          },
+          { fps: 10, qrbox: 250 },
           onScanSuccess,
           onScanError
         );
