@@ -30,14 +30,24 @@
     .checkin-btn { background-color: #4CAF50; color: white; }
     .partial-btn { background-color: #FFA500; color: white; }
     .back-btn { background-color: #7B1113; color: white; }
+    .manual-btn { background-color: #0066CC; color: white; }
     .error-box { margin-top: 20px; color: red; font-weight: bold; }
-    #manual-box { margin-top: 20px; }
-    input[type="text"] { padding: 8px; font-size: 16px; width: 150px; }
+    #manual-box, #matches-box { margin-top: 20px; }
+    input[type="text"] { padding: 8px; font-size: 16px; width: 200px; }
+    ul { list-style: none; padding: 0; }
+    li {
+      background: #eee; margin: 5px; padding: 10px;
+      border-radius: 5px; cursor: pointer;
+    }
+    li:hover { background: #ddd; }
   </style>
 </head>
 <body>
   <h1>Check in - Sep 17</h1>
   <div id="reader"></div>
+  <div class="button-row">
+    <button class="manual-btn" onclick="showManualSearch()">Manual</button>
+  </div>
   
   <!-- Guest Info -->
   <div id="result" class="info-box" style="display:none;">
@@ -63,14 +73,27 @@
     <button onclick="manualLookup()">Lookup</button>
   </div>
 
+  <!-- Manual name search -->
+  <div id="manual-search" style="display:none;">
+    <p>Search by Name:</p>
+    <input type="text" id="manual-namepart" />
+    <button onclick="manualNameSearch()">Search</button>
+  </div>
+
+  <!-- Matches list -->
+  <div id="matches-box" style="display:none;">
+    <h3>Select a Guest</h3>
+    <ul id="matches-list"></ul>
+  </div>
+
   <script>
-    const scriptUrl = "https://script.google.com/macros/s/AKfycbyoDr8fPLrXttjxam833SG0ne28RM6ieSxTq33Or6mq5XydvrRfW2ZfPyALU1U-aJwoBw/exec"; // replace with your Apps Script web app URL
+    const scriptUrl = "https://script.google.com/macros/s/AKfycbwgeFm6ZfW5cbPx5LqxEAjAK8JJaFSNO6uAqqwGvy2UGLDM_ATk6_vU4LhBNio62_l_/exec"; // replace with your Apps Script web app URL
     let lastScannedName = "";
     let scannedAgency = "";
     let scannedHost = "";
     let html5QrCode;
     let currentCameraId;
-    let lastLookupMethod = ""; // "name" or "id"
+    let lastLookupMethod = ""; // "name", "id", or "name_part"
     let lastId = "";
 
     function displayInfo(data) {
@@ -83,6 +106,8 @@
       document.getElementById("result").style.display = "block";
       document.getElementById("error-box").style.display = "none";
       document.getElementById("manual-box").style.display = "none";
+      document.getElementById("manual-search").style.display = "none";
+      document.getElementById("matches-box").style.display = "none";
     }
 
     function showError(message) {
@@ -98,6 +123,8 @@
         url = `${scriptUrl}?name=${encodeURIComponent(lastScannedName)}&action=${action}`;
       } else if (lastLookupMethod === "id") {
         url = `${scriptUrl}?id=${encodeURIComponent(lastId)}&action=${action}`;
+      } else if (lastLookupMethod === "name_part") {
+        url = `${scriptUrl}?name=${encodeURIComponent(lastScannedName)}&action=${action}`;
       } else {
         alert("No guest selected.");
         return;
@@ -132,7 +159,7 @@
             displayInfo(data);
             lastLookupMethod = "id";
             lastId = id;
-            lastScannedName = data.name; // keep name for display
+            lastScannedName = data.name;
           }
         })
         .catch(err => {
@@ -140,10 +167,70 @@
         });
     }
 
+    function showManualSearch() {
+      document.getElementById("manual-search").style.display = "block";
+      document.getElementById("matches-box").style.display = "none";
+      document.getElementById("result").style.display = "none";
+      document.getElementById("error-box").style.display = "none";
+    }
+
+    function manualNameSearch() {
+      const namePart = document.getElementById("manual-namepart").value.trim();
+      if (!namePart) {
+        alert("Please enter a name.");
+        return;
+      }
+      fetch(`${scriptUrl}?name_part=${encodeURIComponent(namePart)}&action=lookup`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.matches) {
+            // Multiple matches
+            const list = document.getElementById("matches-list");
+            list.innerHTML = "";
+            data.matches.forEach(name => {
+              const li = document.createElement("li");
+              li.textContent = name;
+              li.onclick = () => selectGuestByName(name);
+              list.appendChild(li);
+            });
+            document.getElementById("matches-box").style.display = "block";
+          } else if (data.error) {
+            showError(data.error);
+          } else {
+            // Single match, full info
+            displayInfo(data);
+            lastLookupMethod = "name_part";
+            lastScannedName = data.name;
+          }
+        })
+        .catch(err => {
+          showError("Error searching name: " + err);
+        });
+    }
+
+    function selectGuestByName(name) {
+      fetch(`${scriptUrl}?name=${encodeURIComponent(name)}&action=lookup`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.error) {
+            showError(data.error);
+          } else {
+            displayInfo(data);
+            lastLookupMethod = "name_part";
+            lastScannedName = name;
+          }
+        })
+        .catch(err => {
+          showError("Error selecting guest: " + err);
+        });
+    }
+
     function restartScanner() {
       document.getElementById("result").style.display = "none";
       document.getElementById("error-box").style.display = "none";
       document.getElementById("manual-box").style.display = "none";
+      document.getElementById("manual-search").style.display = "none";
+      document.getElementById("matches-box").style.display = "none";
       html5QrCode.start(
         currentCameraId,
         { fps: 10, qrbox: 250 },
@@ -180,7 +267,7 @@
     }
 
     function onScanError(errorMessage) {
-      // ignore small errors
+      // ignore
     }
 
     html5QrCode = new Html5Qrcode("reader");
@@ -203,5 +290,3 @@
   </script>
 </body>
 </html>
-
-
