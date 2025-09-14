@@ -381,13 +381,17 @@
       if (cameras && cameras.length) {
         const backCamera = cameras.find(cam => /back|rear/i.test(cam.label)) || cameras[0];
         currentCameraId = backCamera.id;
-        safeStartScanner();
+    
+        // First time: just start without trying to stop
+        html5QrCode.start(
+          currentCameraId,
+          { fps: 10, qrbox: 250 },
+          onScanSuccess,
+          onScanError
+        );
       } else {
         alert("No cameras found on this device.");
       }
     }).catch(err => {
       alert("Error accessing camera: " + err);
     });
-  </script>
-</body>
-</html>
