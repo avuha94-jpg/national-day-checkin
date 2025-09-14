@@ -122,22 +122,6 @@
     let lastLookupMethod = "";
     let lastId = "";
 
-    // ---- Safe scanner start/stop ----
-    function safeStartScanner() {
-      if (html5QrCode) {
-        html5QrCode.stop().catch(() => {
-          // ignore "already stopped" errors
-        }).finally(() => {
-          html5QrCode.start(
-            currentCameraId,
-            { fps: 10, qrbox: 250 },
-            onScanSuccess,
-            onScanError
-          );
-        });
-      }
-    }
-
     // ---- VVIP ----
     function showVvipMenu() {
       document.getElementById("reader").style.display = "none";
@@ -296,7 +280,12 @@
       document.getElementById("btn-name").style.display = "inline-block";
       document.getElementById("btn-id").style.display = "inline-block";
 
-      safeStartScanner();
+      html5QrCode.start(
+        currentCameraId,
+        { fps: 10, qrbox: 250 },
+        onScanSuccess,
+        onScanError
+      );
     }
 
     function restartScanner() {
@@ -312,7 +301,12 @@
       document.getElementById("btn-name").style.display = "inline-block";
       document.getElementById("btn-id").style.display = "inline-block";
 
-      safeStartScanner();
+      html5QrCode.start(
+        currentCameraId,
+        { fps: 10, qrbox: 250 },
+        onScanSuccess,
+        onScanError
+      );
     }
 
     // ---- Status Updates ----
@@ -381,8 +375,6 @@
       if (cameras && cameras.length) {
         const backCamera = cameras.find(cam => /back|rear/i.test(cam.label)) || cameras[0];
         currentCameraId = backCamera.id;
-    
-        // First time: just start without trying to stop
         html5QrCode.start(
           currentCameraId,
           { fps: 10, qrbox: 250 },
@@ -395,3 +387,6 @@
     }).catch(err => {
       alert("Error accessing camera: " + err);
     });
+  </script>
+</body>
+</html>
