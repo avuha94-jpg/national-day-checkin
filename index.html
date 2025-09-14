@@ -211,9 +211,16 @@
       document.getElementById("result").style.display = "none";
       document.getElementById("error-box").style.display = "none";
       document.getElementById("reader").style.display = "block";
+      document.getElementById("manual-buttons").style.display = "block";
       document.getElementById("btn-name").style.display = "inline-block";
       document.getElementById("btn-id").style.display = "inline-block";
-      document.getElementById("manual-buttons").style.display = "block";
+    
+      html5QrCode.start(
+        currentCameraId,
+        { fps: 10, qrbox: 250 },
+        onScanSuccess,
+        onScanError
+      );
     }
 
     function manualNameSearch() {
@@ -333,3 +340,4 @@
   </script>
 </body>
 </html>
+
