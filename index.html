@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Check in - Sep 17</title>
+  <title>Check in</title>
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
   <style>
     body {
@@ -12,7 +12,6 @@
       text-align: center;
       padding: 20px;
     }
-    h1 { color: #7B1113; }
     #reader { width: 300px; margin: auto; }
     .info-box {
       margin-top: 20px; padding: 15px; background: #fff;
@@ -32,6 +31,7 @@
     .back-btn { background-color: #7B1113; color: white; }
     .name-btn { background-color: #0066CC; color: white; }
     .id-btn { background-color: #800080; color: white; }
+    .vvip-btn { background-color: #B22222; color: white; }
     .error-box { margin-top: 20px; color: red; font-weight: bold; }
     #manual-box, #matches-box { margin-top: 20px; }
     input[type="text"] { padding: 8px; font-size: 16px; width: 200px; }
@@ -44,11 +44,29 @@
   </style>
 </head>
 <body>
-  <h1>Check in - Sep 17</h1>
+  <!-- VVIP Alert -->
+  <div class="button-row">
+    <button class="vvip-btn" onclick="showVvipMenu()">VVIP alert</button>
+  </div>
+
+  <!-- Scanner -->
   <div id="reader"></div>
+
+  <!-- Manual Buttons -->
   <div class="button-row" id="manual-buttons">
     <button class="name-btn" id="btn-name" onclick="showManualSearch()">By name</button>
     <button class="id-btn" id="btn-id" onclick="showManualId()">By ID</button>
+  </div>
+
+  <!-- VVIP Menu -->
+  <div id="vvip-menu" style="display:none; margin-top:20px;">
+    <button onclick="sendVvipAlert('duffy')">Secretary Duffy</button>
+    <button onclick="sendVvipAlert('christensen')">AUS Christensen</button>
+    <button onclick="sendVvipAlert('marshall')">Senator Marshall</button>
+    <button onclick="sendVvipAlert('whitehouse')">Senator Whitehouse</button>
+    <div class="button-row">
+      <button class="back-btn" onclick="backToMain()">Back</button>
+    </div>
   </div>
   
   <!-- Guest Info -->
@@ -95,7 +113,7 @@
   </div>
 
   <script>
-    const scriptUrl = "https://script.google.com/macros/s/AKfycbxvCoSq3QuaNVU-w8xfEODO7LwdV_tIMZM5wVSXmNLz4FpDRslDBRy-929U3NU5_egXlw/exec";
+    const scriptUrl = "https://script.google.com/macros/s/AKfycbzetzgBZuxXzITXw_KpOns_2WNA9kx3sr16uErRNbgX3mhLwu7dJ-qa1ukeHW88sXuz9w/exec";
     let lastScannedName = "";
     let scannedAgency = "";
     let scannedHost = "";
@@ -104,6 +122,28 @@
     let lastLookupMethod = "";
     let lastId = "";
 
+    // ---- VVIP ----
+    function showVvipMenu() {
+      document.getElementById("reader").style.display = "none";
+      document.getElementById("manual-buttons").style.display = "none";
+      document.getElementById("vvip-menu").style.display = "block";
+    }
+
+    function sendVvipAlert(vvip) {
+      fetch(`${scriptUrl}?vvip=${vvip}&action=vvipAlert`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            alert("VVIP alert sent: " + vvip);
+            backToMain();
+          } else {
+            alert("Error: " + data.error);
+          }
+        })
+        .catch(err => alert("Error sending VVIP alert: " + err));
+    }
+
+    // ---- Display Guest Info ----
     function displayInfo(data) {
       document.getElementById("guest-name").textContent = data.name || lastScannedName;
       document.getElementById("guest-agency").textContent = data.agency || scannedAgency;
@@ -117,6 +157,7 @@
       document.getElementById("manual-search").style.display = "none";
       document.getElementById("matches-box").style.display = "none";
       document.getElementById("manual-buttons").style.display = "none";
+      document.getElementById("vvip-menu").style.display = "none";
     }
 
     function showError(message) {
@@ -126,33 +167,7 @@
       document.getElementById("result").style.display = "none";
     }
 
-    function updateStatus(action) {
-      let url = "";
-      if (lastLookupMethod === "name") {
-        url = `${scriptUrl}?name=${encodeURIComponent(lastScannedName)}&action=${action}`;
-      } else if (lastLookupMethod === "id") {
-        url = `${scriptUrl}?id=${encodeURIComponent(lastId)}&action=${action}`;
-      } else if (lastLookupMethod === "name_part") {
-        url = `${scriptUrl}?name=${encodeURIComponent(lastScannedName)}&action=${action}`;
-      } else {
-        alert("No guest selected.");
-        return;
-      }
-
-      fetch(url)
-        .then(res => res.json())
-        .then(data => {
-          if (data.error) {
-            showError(data.error);
-          } else {
-            displayInfo(data);
-          }
-        })
-        .catch(err => {
-          showError("Error updating status: " + err);
-        });
-    }
-
+    // ---- Manual Lookups ----
     function manualLookup() {
       const id = document.getElementById("manual-id").value.trim();
       if (!id) {
@@ -200,27 +215,6 @@
       document.getElementById("error-box").style.display = "none";
       document.getElementById("manual-box").style.display = "none";
       document.getElementById("btn-id").style.display = "none";
-    }
-
-    function backToMain() {
-      document.getElementById("manual-box").style.display = "none";
-      document.getElementById("manual-search").style.display = "none";
-      document.getElementById("matches-box").style.display = "none";
-      document.getElementById("result").style.display = "none";
-      document.getElementById("error-box").style.display = "none";
-      document.getElementById("reader").style.display = "block";
-
-      // Always restore BOTH buttons
-      document.getElementById("manual-buttons").style.display = "block";
-      document.getElementById("btn-name").style.display = "inline-block";
-      document.getElementById("btn-id").style.display = "inline-block";
-
-      html5QrCode.start(
-        currentCameraId,
-        { fps: 10, qrbox: 250 },
-        onScanSuccess,
-        onScanError
-      );
     }
 
     function manualNameSearch() {
@@ -272,15 +266,16 @@
         });
     }
 
-    function restartScanner() {
-      document.getElementById("result").style.display = "none";
-      document.getElementById("error-box").style.display = "none";
+    // ---- Reset/Back ----
+    function backToMain() {
       document.getElementById("manual-box").style.display = "none";
       document.getElementById("manual-search").style.display = "none";
       document.getElementById("matches-box").style.display = "none";
+      document.getElementById("result").style.display = "none";
+      document.getElementById("error-box").style.display = "none";
+      document.getElementById("vvip-menu").style.display = "none";
       document.getElementById("reader").style.display = "block";
 
-      // Always restore BOTH buttons
       document.getElementById("manual-buttons").style.display = "block";
       document.getElementById("btn-name").style.display = "inline-block";
       document.getElementById("btn-id").style.display = "inline-block";
@@ -293,6 +288,56 @@
       );
     }
 
+    function restartScanner() {
+      document.getElementById("result").style.display = "none";
+      document.getElementById("error-box").style.display = "none";
+      document.getElementById("manual-box").style.display = "none";
+      document.getElementById("manual-search").style.display = "none";
+      document.getElementById("matches-box").style.display = "none";
+      document.getElementById("reader").style.display = "block";
+      document.getElementById("vvip-menu").style.display = "none";
+
+      document.getElementById("manual-buttons").style.display = "block";
+      document.getElementById("btn-name").style.display = "inline-block";
+      document.getElementById("btn-id").style.display = "inline-block";
+
+      html5QrCode.start(
+        currentCameraId,
+        { fps: 10, qrbox: 250 },
+        onScanSuccess,
+        onScanError
+      );
+    }
+
+    // ---- Status Updates ----
+    function updateStatus(action) {
+      let url = "";
+      if (lastLookupMethod === "name") {
+        url = `${scriptUrl}?name=${encodeURIComponent(lastScannedName)}&action=${action}`;
+      } else if (lastLookupMethod === "id") {
+        url = `${scriptUrl}?id=${encodeURIComponent(lastId)}&action=${action}`;
+      } else if (lastLookupMethod === "name_part") {
+        url = `${scriptUrl}?name=${encodeURIComponent(lastScannedName)}&action=${action}`;
+      } else {
+        alert("No guest selected.");
+        return;
+      }
+
+      fetch(url)
+        .then(res => res.json())
+        .then(data => {
+          if (data.error) {
+            showError(data.error);
+          } else {
+            displayInfo(data);
+          }
+        })
+        .catch(err => {
+          showError("Error updating status: " + err);
+        });
+    }
+
+    // ---- QR Scanner ----
     function onScanSuccess(decodedText, decodedResult) {
       const parts = decodedText.split("|");
       if (parts.length >= 4) {
@@ -324,6 +369,7 @@
       // ignore
     }
 
+    // ---- Init ----
     html5QrCode = new Html5Qrcode("reader");
     Html5Qrcode.getCameras().then(cameras => {
       if (cameras && cameras.length) {
