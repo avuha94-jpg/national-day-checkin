@@ -187,7 +187,6 @@
       document.getElementById("result").style.display = "none";
       document.getElementById("error-box").style.display = "none";
       document.getElementById("btn-name").style.display = "none";
-      document.getElementById("btn-id").style.display = "inline-block";
     }
 
     function showManualSearch() {
@@ -201,7 +200,6 @@
       document.getElementById("error-box").style.display = "none";
       document.getElementById("manual-box").style.display = "none";
       document.getElementById("btn-id").style.display = "none";
-      document.getElementById("btn-name").style.display = "inline-block";
     }
 
     function backToMain() {
@@ -214,7 +212,7 @@
       document.getElementById("manual-buttons").style.display = "block";
       document.getElementById("btn-name").style.display = "inline-block";
       document.getElementById("btn-id").style.display = "inline-block";
-    
+
       html5QrCode.start(
         currentCameraId,
         { fps: 10, qrbox: 250 },
@@ -340,4 +338,3 @@
   </script>
 </body>
 </html>
-
