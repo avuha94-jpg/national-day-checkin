@@ -30,7 +30,8 @@
     .checkin-btn { background-color: #4CAF50; color: white; }
     .partial-btn { background-color: #FFA500; color: white; }
     .back-btn { background-color: #7B1113; color: white; }
-    .manual-btn { background-color: #0066CC; color: white; }
+    .name-btn { background-color: #0066CC; color: white; }
+    .id-btn { background-color: #800080; color: white; }
     .error-box { margin-top: 20px; color: red; font-weight: bold; }
     #manual-box, #matches-box { margin-top: 20px; }
     input[type="text"] { padding: 8px; font-size: 16px; width: 200px; }
@@ -46,7 +47,8 @@
   <h1>Check in - Sep 17</h1>
   <div id="reader"></div>
   <div class="button-row">
-    <button class="manual-btn" onclick="showManualSearch()">Manual</button>
+    <button class="name-btn" onclick="showManualSearch()">By name</button>
+    <button class="id-btn" onclick="showManualId()">By ID</button>
   </div>
   
   <!-- Guest Info -->
@@ -87,13 +89,13 @@
   </div>
 
   <script>
-    const scriptUrl = "https://script.google.com/macros/s/AKfycbxvCoSq3QuaNVU-w8xfEODO7LwdV_tIMZM5wVSXmNLz4FpDRslDBRy-929U3NU5_egXlw/exec"; // replace with your Apps Script web app URL
+    const scriptUrl = "https://script.google.com/macros/s/AKfycbxvCoSq3QuaNVU-w8xfEODO7LwdV_tIMZM5wVSXmNLz4FpDRslDBRy-929U3NU5_egXlw/exec";
     let lastScannedName = "";
     let scannedAgency = "";
     let scannedHost = "";
     let html5QrCode;
     let currentCameraId;
-    let lastLookupMethod = ""; // "name", "id", or "name_part"
+    let lastLookupMethod = "";
     let lastId = "";
 
     function displayInfo(data) {
@@ -167,6 +169,18 @@
         });
     }
 
+    function showManualId() {
+      if (html5QrCode) {
+        html5QrCode.stop().catch(err => console.log("Scanner already stopped"));
+      }
+      document.getElementById("reader").style.display = "none";
+      document.getElementById("manual-box").style.display = "block";
+      document.getElementById("manual-search").style.display = "none";
+      document.getElementById("matches-box").style.display = "none";
+      document.getElementById("result").style.display = "none";
+      document.getElementById("error-box").style.display = "none";
+    }
+
     function showManualSearch() {
       if (html5QrCode) {
         html5QrCode.stop().catch(err => console.log("Scanner already stopped"));
@@ -176,6 +190,7 @@
       document.getElementById("matches-box").style.display = "none";
       document.getElementById("result").style.display = "none";
       document.getElementById("error-box").style.display = "none";
+      document.getElementById("manual-box").style.display = "none";
     }
 
     function manualNameSearch() {
@@ -188,7 +203,6 @@
         .then(res => res.json())
         .then(data => {
           if (data.matches) {
-            // Multiple matches
             const list = document.getElementById("matches-list");
             list.innerHTML = "";
             data.matches.forEach(name => {
@@ -201,7 +215,6 @@
           } else if (data.error) {
             showError(data.error);
           } else {
-            // Single match, full info
             displayInfo(data);
             lastLookupMethod = "name_part";
             lastScannedName = data.name;
@@ -296,4 +309,3 @@
   </script>
 </body>
 </html>
-
