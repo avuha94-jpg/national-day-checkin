@@ -46,9 +46,9 @@
 <body>
   <h1>Check in - Sep 17</h1>
   <div id="reader"></div>
-  <div class="button-row">
-    <button class="name-btn" onclick="showManualSearch()">By name</button>
-    <button class="id-btn" onclick="showManualId()">By ID</button>
+  <div class="button-row" id="manual-buttons">
+    <button class="name-btn" id="btn-name" onclick="showManualSearch()">By name</button>
+    <button class="id-btn" id="btn-id" onclick="showManualId()">By ID</button>
   </div>
   
   <!-- Guest Info -->
@@ -73,6 +73,9 @@
     <p>Enter Guest ID (3-letter):</p>
     <input type="text" id="manual-id" maxlength="3" />
     <button onclick="manualLookup()">Lookup</button>
+    <div class="button-row">
+      <button class="back-btn" onclick="backToMain()">Back</button>
+    </div>
   </div>
 
   <!-- Manual name search -->
@@ -80,6 +83,9 @@
     <p>Search by Name:</p>
     <input type="text" id="manual-namepart" />
     <button onclick="manualNameSearch()">Search</button>
+    <div class="button-row">
+      <button class="back-btn" onclick="backToMain()">Back</button>
+    </div>
   </div>
 
   <!-- Matches list -->
@@ -110,6 +116,7 @@
       document.getElementById("manual-box").style.display = "none";
       document.getElementById("manual-search").style.display = "none";
       document.getElementById("matches-box").style.display = "none";
+      document.getElementById("manual-buttons").style.display = "none";
     }
 
     function showError(message) {
@@ -179,6 +186,8 @@
       document.getElementById("matches-box").style.display = "none";
       document.getElementById("result").style.display = "none";
       document.getElementById("error-box").style.display = "none";
+      document.getElementById("btn-name").style.display = "none";
+      document.getElementById("btn-id").style.display = "inline-block";
     }
 
     function showManualSearch() {
@@ -191,6 +200,20 @@
       document.getElementById("result").style.display = "none";
       document.getElementById("error-box").style.display = "none";
       document.getElementById("manual-box").style.display = "none";
+      document.getElementById("btn-id").style.display = "none";
+      document.getElementById("btn-name").style.display = "inline-block";
+    }
+
+    function backToMain() {
+      document.getElementById("manual-box").style.display = "none";
+      document.getElementById("manual-search").style.display = "none";
+      document.getElementById("matches-box").style.display = "none";
+      document.getElementById("result").style.display = "none";
+      document.getElementById("error-box").style.display = "none";
+      document.getElementById("reader").style.display = "block";
+      document.getElementById("btn-name").style.display = "inline-block";
+      document.getElementById("btn-id").style.display = "inline-block";
+      document.getElementById("manual-buttons").style.display = "block";
     }
 
     function manualNameSearch() {
@@ -249,6 +272,7 @@
       document.getElementById("manual-search").style.display = "none";
       document.getElementById("matches-box").style.display = "none";
       document.getElementById("reader").style.display = "block";
+      document.getElementById("manual-buttons").style.display = "block";
 
       html5QrCode.start(
         currentCameraId,
